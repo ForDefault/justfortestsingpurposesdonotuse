@@ -1,0 +1,81 @@
+version: "3.9"
+
+networks:
+  t2_proxy:
+     external: true    
+
+services:
+    
+  wireguard:
+    image: lscr.io/linuxserver/wireguard:latest
+    container_name: wireguard
+    cap_add:
+      - NET_ADMIN
+    environment:
+      - ${PGID}
+      - ${PUID}
+      - ${TZ}
+      - LOG_CONFS=true #optional
+    volumes:
+      - ${APPDIR}/wireguard/config/:/config
+      - /lib/modules:/lib/modules #optional
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1     
+    restart: unless-stopped
+    networks:  
+      t2_proxy:
+        ipv4_address: 192.168.90.100         
+#    labels:
+#      - "traefik.enable=true"
+     ## HTTP Routers
+#      - "traefik.http.routers.prowlarr-rtr.entrypoints=https"
+#      - "traefik.http.routers.prowlarr-rtr.rule=Host(`prowlarr.${DOMAIN}`)"
+#      - "traefik.http.routers.prowlarr-rtr.tls=true"            
+#      - "traefik.http.routers.rdtclient-rtr.entrypoints=https"
+#      - "traefik.http.routers.rdtclient-rtr.rule=Host(`rdtclient.${DOMAIN}`)"
+#      - "traefik.http.routers.rdtclient-rtr.tls=true" 
+#      - "traefik.http.routers.jackett-rtr.entrypoints=https"
+#      - "traefik.http.routers.jackett-rtr.rule=Host(`jackett.${DOMAIN}`)"
+#      - "traefik.http.routers.jackett-rtr.tls=true"      
+     ## Middlewares
+#      - "traefik.http.routers.prowlarr-rtr.middlewares=chain-oauth@file"        
+#      - "traefik.http.routers.rdtclient-rtr.middlewares=chain-oauth@file" 
+#      - "traefik.http.routers.jackett-rtr.middlewares=chain-oauth@file"      
+     ## HTTP Services             
+#      - "traefik.http.routers.prowlarr-rtr.service=prowlarr-svc"
+#      - "traefik.http.services.prowlarr-svc.loadbalancer.server.port=9696"                
+#      - "traefik.http.routers.rdtclient-rtr.service=rdtclient-svc"
+#      - "traefik.http.services.rdtclient-svc.loadbalancer.server.port=6500"
+#      - "traefik.http.routers.jackett-rtr.service=jackett-svc"
+#      - "traefik.http.services.jackett-svc.loadbalancer.server.port=9117"  
+      
+  openvpn:
+    image: jsloan117/docker-openvpn-client
+    container_name: openvpn
+    cap_add:
+      - NET_ADMIN
+    environment:
+      - ${PGID}
+      - ${PUID}
+      - ${TZ}
+      - LOG_CONFS=true #optional
+      - OPENVPN_USERNAME=${PUREVPNUN}
+      - OPENVPN_PASSWORD=${PUREVPNPW}
+      - OPENVPN_PROVIDER=PUREVPN
+      - OPENVPN_CONFIG=NL-ovpn-tcp
+      - LOCAL_NETWORK=192.168.90.0/24
+      - CREATE_TUN_DEVICE=true
+      - HEALTH_CHECK_HOST=google.com
+    dns:
+      - 192.168.90.90
+    #  - 1.0.0.1           
+    volumes:
+      - ${APPDIR}/openvpn/config/:/etc/openvpn   
+      - /etc/localtime:/etc/localtime:ro  
+    networks:  
+      t2_proxy:
+        ipv4_address: 192.168.90.101   	      
+    restart: unless-stopped        
+    healthcheck:
+      test: [CMD, /etc/scripts/healthcheck.sh]
+      interval: 1m 

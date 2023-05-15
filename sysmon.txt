@@ -1,0 +1,161 @@
+services:
+ prometheus:
+   image: prom/prometheus:latest
+   container_name: prometheus
+   environment:
+     - ${TZ}
+     - ${PUID}
+     - ${PGID}
+   volumes:
+     - ${APPDIR}/prometheus/config:/etc/prometheus #prometheus.yml
+   networks:
+     - t2_proxy
+     - internal	 
+   labels:
+     - "traefik.enable=true"
+     ## HTTP Routers
+     - "traefik.http.routers.prometheus-rtr.entrypoints=https"
+     - "traefik.http.routers.prometheus-rtr.rule=Host(`prometheus.${DOMAIN}`)"
+     - "traefik.http.routers.prometheus-rtr.tls=true"
+     ## Middlewares
+     - "traefik.http.routers.prometheus-rtr.middlewares=chain-oauth@file" 
+     ## HTTP Services
+     - "traefik.http.routers.prometheus-rtr.service=prometheus-svc"
+     - "traefik.http.services.prometheus-svc.loadbalancer.server.port=9090"
+   healthcheck:
+     test: wget --no-verbose --tries=1 --spider http://localhost:9090 || exit 1
+     interval: 60s
+     retries: 5
+     start_period: 20s
+     timeout: 10s        
+   restart: unless-stopped 
+   
+ node-exporter:
+   image: prom/node-exporter
+   container_name: node-exporter
+   networks:
+     - internal
+   healthcheck:
+     test: wget --no-verbose --tries=1 --spider http://localhost:9100 || exit 1
+     interval: 60s
+     retries: 5
+     start_period: 20s
+     timeout: 10s
+   restart: unless-stopped
+   
+ cadvisor:
+   image: gcr.io/cadvisor/cadvisor:v0.46.0
+   container_name: cadvisor
+   devices:
+     - /dev/kmsg:/dev/kmsg 
+   cap_add:
+     - CAP_SYSLOG  
+   environment:
+     - ${PUID}
+     - ${PGID}
+     - ${TZ}
+   volumes:
+     - /:/rootfs:ro
+     - /var/run:/var/run:rw
+     - /sys:/sys:ro
+     - /var/lib/docker/:/var/lib/docker:ro
+   networks:
+     - internal
+   restart: unless-stopped    
+       
+ grafana:
+   image: grafana/grafana
+   container_name: grafana
+   environment:
+     - ${TZ}
+   user: '1000:1000'
+   volumes:
+     - ${APPDIR}/grafana/grafana_db:/var/lib/grafana
+     - ${APPDIR}/grafana/dashboards:/var/lib/grafana/dashboards
+   networks:
+     - t2_proxy
+     - internal	 
+   labels:
+     - "traefik.enable=true"
+     ## HTTP Routers
+     - "traefik.http.routers.grafana-rtr.entrypoints=https"
+     - "traefik.http.routers.grafana-rtr.rule=Host(`grafana.${DOMAIN}`)"
+     - "traefik.http.routers.grafana-rtr.tls=true"
+     ## Middlewares
+     - "traefik.http.routers.grafana-rtr.middlewares=chain-oauth@file"     
+     ## HTTP Services
+     - "traefik.http.routers.grafana-rtr.service=grafana-svc"
+     - "traefik.http.services.grafana-svc.loadbalancer.server.port=3000"
+   healthcheck:
+     test: wget --no-verbose --tries=1 --spider http://localhost:3000 || exit 1
+     interval: 60s
+     retries: 5
+     start_period: 20s
+     timeout: 10s
+   restart: unless-stopped
+   
+ go-access-traefik: 
+   image: gregyankovoy/goaccess 
+   container_name: go-access-traefik
+   environment:
+     - ${TZ}
+     - ${PUID}
+     - ${PGID}
+   networks:
+     - t2_proxy	 
+   volumes: 
+      - ${LOGDIR}/cloudserver/traefik:/opt/log
+      - ${APPDIR}/go-access-traefik:/config
+   labels:
+     - "traefik.enable=true"
+     ## HTTP Routers
+     - "traefik.http.routers.go-access-traefik-rtr.entrypoints=https"
+     - "traefik.http.routers.go-access-traefik-rtr.rule=Host(`go-access-traefik.${DOMAIN}`)"
+     - "traefik.http.routers.go-access-traefik-rtr.tls=true"
+     ## Middlewares
+     - "traefik.http.routers.go-access-traefik-rtr.middlewares=chain-oauth@file"
+     ## HTTP Services
+     - "traefik.http.routers.go-access-traefik-rtr.service=go-access-traefik-svc"
+     - "traefik.http.services.go-access-traefik-svc.loadbalancer.server.port=7889"    
+   healthcheck:
+     test: wget --no-verbose --tries=1 --spider http://localhost:7889 || exit 1
+     interval: 60s
+     retries: 5
+     start_period: 20s
+     timeout: 10s
+   restart: unless-stopped
+
+ mtail: 
+   image: wpalmer/mtail
+   container_name: mtail
+   environment:
+     - ${TZ}
+     - ${PUID}
+     - ${PGID}
+  #   - --progs /etc/mtail/dnscrypt.mtail
+   networks:
+     - internal	 
+   volumes: 
+      - ${LOGDIR}/dnscrypt-proxy:/var/spool/mtail
+      - ${APPDIR}/mtail/progs:/etc/mtail
+   restart: unless-stopped
+   
+ speedtest:
+   image: danopstech/speedtest_exporter
+   container_name: speedtest  
+   networks:
+     - internal  
+     - t2_proxy	     
+   restart: on-failure
+   
+ speedtest_ovpn:
+   image: danopstech/speedtest_exporter
+   container_name: speedtest_ovpn  
+   network_mode: container:wireguard  
+   restart: on-failure    
+    
+networks:
+  t2_proxy:
+     external: true
+  internal:
+     external: true

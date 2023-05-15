@@ -1,0 +1,66 @@
+version: "3.9" 
+
+networks:
+  t2_proxy:
+     external: true    
+services:
+  rclone_arr_gdrive:
+    container_name: rclone_arr_gdrive
+    image: rclone/rclone   
+    volumes:
+      - ${APPDIR}/rclone/config:/config/rclone
+      - ${LOGDIR}/rclone:/log
+      - ${APPDIR}/rclone/cache:/cache
+      - ${APPDIR}/rclone/mnt:/data:shared
+      - ${APPDIR}/rclone/account:/account
+      - /etc/fuse.conf:/etc/fuse.conf:ro      
+    command: 'mount arr_gdrive: /data/arr_gdrive --dir-cache-time=10s --allow-other'
+    environment:
+      - ${PUID}
+      - ${PGID}
+      - ${TZ}
+      - RCLONE_LOG_LEVEL=INFO
+      - RCLONE_LOG_FILE=/log/arr_gdrvie_log.txt 
+    networks:
+      t2_proxy:
+        ipv4_address: 192.168.90.200        
+    devices:
+      - /dev/fuse:/dev/fuse:rwm
+    cap_add:
+      - SYS_ADMIN   
+    security_opt:
+      - apparmor:unconfined    
+      - no-new-privileges
+    restart: unless-stopped
+    
+  rclone_arr_encrypted:
+    container_name: rclone_arr_encrypted
+    image: rclone/rclone  
+    volumes:
+      - ${APPDIR}/rclone/config:/config/rclone
+      - ${LOGDIR}/rclone:/log
+      - ${APPDIR}/rclone/cache:/cache
+      - ${APPDIR}/rclone/mnt:/data:shared
+      - ${APPDIR}/rclone/account:/account
+      - /etc/fuse.conf:/etc/fuse.conf:ro      
+    command: 'mount arr_encrypted: /data/arr_gdrive/encrypted --allow-other --allow-non-empty --cache-dir=/cache --vfs-cache-max-size=300G --vfs-cache-mode=full --vfs-write-back=5m --poll-interval=10s --dir-cache-time=9999h'
+    environment:
+      - ${PUID}
+      - ${PGID}
+      - ${TZ}
+      - RCLONE_LOG_LEVEL=INFO
+      - RCLONE_LOG_FILE=/log/arr_encrypted_log.txt
+    networks:
+      t2_proxy:
+        ipv4_address: 192.168.90.201       
+    devices:
+      - /dev/fuse:/dev/fuse:rwm
+    cap_add:
+      - SYS_ADMIN     
+    security_opt:
+      - apparmor:unconfined    
+      - no-new-privileges
+    depends_on:
+      - rclone_arr_gdrive
+    restart: unless-stopped 
+ 

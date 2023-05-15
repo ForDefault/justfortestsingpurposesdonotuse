@@ -1,0 +1,59 @@
+version: "3.9"
+
+networks:
+  t2_proxy:
+     external: true    
+
+services:
+
+  dnscrypt-proxy:
+    container_name: dnscrypt-proxy  
+    image: xtr0py/dnscrypt-proxy-2-docker
+    security_opt:
+      - no-new-privileges:true    
+    environment:
+      - ${TZ}
+      - ${PUID}
+      - ${PGID}    
+    networks:  
+      t2_proxy:
+        ipv4_address: 192.168.90.90          
+    ports:
+        - "54:53/udp"
+        - "54:53/tcp"
+    volumes:
+        - ${APPDIR}/dnscrypt-proxy/config/dnscrypt-proxy.toml:/config/dnscrypt-proxy.toml
+        - ${LOGDIR}/dnscrypt-proxy:/var/log/dnscrypt-proxy/
+    labels:
+      - "traefik.enable=true"
+     ## HTTP Routers
+      - "traefik.http.routers.pihole-rtr.entrypoints=https"
+      - "traefik.http.routers.pihole-rtr.rule=Host(`pihole.${DOMAIN}`)"
+      - "traefik.http.routers.pihole-rtr.tls=true"
+     ## Middlewares
+      - "traefik.http.routers.pihole-rtr.middlewares=chain-oauth@file,add-admin" 
+      - "traefik.http.middlewares.add-admin.addprefix.prefix=/admin"     
+     ## HTTP Services
+      - "traefik.http.routers.pihole-rtr.service=pihole-svc"
+      - "traefik.http.services.pihole-svc.loadbalancer.server.port=80"         
+    restart: unless-stopped
+
+  pihole:
+    container_name: pihole
+    image: pihole/pihole:latest
+    security_opt:
+      - no-new-privileges:true    
+    environment:
+      - ${TZ}
+      - PIHOLE_UID=1000
+      - PIHOLE_GID=1000
+      - WEBPASSWORD=${PIHOLEPW}
+      - DNS1=127.0.0.1#5353    
+      - DNSSEC=true
+      - DNS_BOGUS_PRIV=true
+      - DNS_FQDN_REQUIRED=true
+    network_mode: container:dnscrypt-proxy      
+    volumes:
+      - ${APPDIR}/pihole/etc-pihole:/etc/pihole
+      - ${APPDIR}/pihole/etc-dnsmasq.d:/etc/dnsmasq.d
+    restart: unless-stopped

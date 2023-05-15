@@ -1,0 +1,191 @@
+
+#check croudsec logs from conatiner cmd:
+cscli decisions list
+cscli alerts list
+cscli metrics
+service crowdsec restart
+service crowdsec-firewall-bouncer restart
+cscli lapi status
+cscli collections list
+cscli hub list
+cscli hub update
+cscli hub upgrade
+cscli collections upgrade collection -a
+tail -f /var/log/crowdsec.log
+tail -f /var/log/crowdsec_api.log
+cscli explain --file /logs/web/traefik/access.log --type traefik
+cscli explain --file /logs/web/traefik/traefik.log --type traefik
+#crowdsec unban IP
+cscli decisions delete -i x.x.x.x
+#crowdsec remove alerts
+cscli alerts delete --ip x.x.x.x
+
+#list of open ports:
+lsof -i -P -n | grep LISTEN
+ss -tulpn | grep LISTEN
+
+
+#listen to trafic on specific port
+tcpdump -ni any port 9443
+
+
+#ip routes
+ip route get x.x.x.x
+ip r
+
+
+#iptables nat list
+iptables -t nat -S
+
+#iptbales list 
+iptables -L
+
+#iptables list-rules
+iptables -S
+
+#view running services
+service --status-all
+
+#get service PID of container
+ps aux | grep <<container id>>
+
+#get service PID
+ps -eo 'tty,pid,comm' | grep ^?
+ps -eo 'tty,pid,comm' | grep rclone
+
+#get pid by start timed
+ps -eo pid,lstart,cmd | grep rclone
+
+#umount drive
+umount ./RealD
+
+#force umount drive
+umount -l ./RealD
+
+#docker container logs
+docker logs portainer
+
+
+#get public IP of server
+curl -w "\n" ifconfig.me
+wget -qO- http://ipecho.net/plain | xargs echo
+host myip.opendns.com resolver1.opendns.com | grep "myip.opendns.com has" | awk '{print $4}'
+dig +short myip.opendns.com @resolver1.opendns.com
+
+
+#check real debrid block 
+curl -4 https://real-debrid.com/vpn | grep blocked
+
+#get public IP of docker container
+docker exec -it wireguard curl -w "\n" ifconfig.me
+
+
+#add ping cmd to conatiner 
+apt-get update -y
+apt-get install -y iputils-ping
+
+
+#add dns utl
+apt-get install dnsutils -y
+
+
+#Portainer buide image with docker build 
+https://github.com/itsToggle/rclone_RD.git
+
+
+#busybox speedtest
+apk update && apk add speedtest-cli
+
+
+#speedtest
+apt update -y
+apt install speedtest-cli -y
+
+
+#wireguard:
+vi /etc/wireguard/wg0.conf
+systemctl start wg-quick@wg0
+systemctl status wg-quick@wg0.service
+wg-quick down wg0
+systemctl restart wg-quick@wg0
+
+
+#install fio for testing HD IOPS
+apt-get update
+apt-get install fio
+
+#fio Testing sequential read speed with very big blocks
+fio --name TEST --eta-newline=5s --filename=temp.file --rw=read --size=2g --io_size=10g --blocksize=1024k --ioengine=libaio --fsync=10000 --iodepth=32 --direct=1 --numjobs=1 --runtime=60 --group_reporting
+
+#fio Testing sequential write speed with very big blocks
+fio --name TEST --eta-newline=5s --filename=temp.file --rw=write --size=2g --io_size=10g --blocksize=1024k --ioengine=libaio --fsync=10000 --iodepth=32 --direct=1 --numjobs=1 --runtime=60 --group_reporting
+
+#fio Testing random 4K reads
+fio --name TEST --eta-newline=5s --filename=temp.file --rw=randread --size=2g --io_size=10g --blocksize=4k --ioengine=libaio --fsync=1 --iodepth=1 --direct=1 --numjobs=32 --runtime=60 --group_reporting
+
+#fio Testing mixed random 4K read and write
+fio --name TEST --eta-newline=5s --filename=temp.file --rw=randrw --size=2g --io_size=10g --blocksize=4k --ioengine=libaio --fsync=1 --iodepth=1 --direct=1 --numjobs=1 --runtime=60 --group_reporting
+
+
+#set timezone
+timedatectl set-timezone America/New_York
+
+
+#add user
+adduser username
+
+#add user to sudoers group
+usermod -aG sudo username
+
+#List environment variables
+printenv
+
+
+#check multiple variables simultaneously
+printenv HOME SHELL
+
+
+#Set a temporary environment variable
+export MY_SITE="linuxconfig.org"
+
+#Set a permanent environment variable per user -- the hard way -- options: /etc/profile accessible by all users or /etc/environment accessible system-wide
+vi ~/.bashrc  
+#append a line to the end   
+export MY_SITE='linuxconfig.org'
+#load
+source ~/.bashrc
+
+#Set a permanent environment variable per user -- the easier way (single or multiple entries) -- options: /etc/profile accessible by all users or /etc/environment accessible system-wide
+#single entry
+echo "export MY_SITE='linuxconfig.org'" >> ~/.bashrc
+#multipule entries
+echo -e "line3\n line4\n line5\n" >> file.txt
+#load
+source ~/.bashrc
+
+#Set a permanent environment variable per user -- the easiest way  (use only once or lines will be appended multiple times) -- options: /etc/profile accessible by all users or /etc/environment accessible system-wide
+cat (an env.txt file with all variables) >> ~/.bashrc
+#load
+source ~/.bashrc
+
+#Download dnsleaktest.sh
+curl https://raw.githubusercontent.com/macvk/dnsleaktest/master/dnsleaktest.sh -o dnsleaktest.sh
+chmod +x dnsleaktest.sh
+#Run dnsleaktest.sh
+./dnsleaktest.sh
+
+#view login/out users -- last command
+last
+last -a | grep -i still
+
+#view ssh connections -- still command
+ss
+ss | grep -i ssh
+
+#view who is logged on -- who command
+who
+
+#view users currently on the machine, and their processes -- w command
+w
+
+

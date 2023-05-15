@@ -1,0 +1,44 @@
+version: "3.9" 
+
+networks:
+  t2_proxy:
+     external: true    
+     
+services:
+
+  rdtclient:
+    image: rogerfar/rdtclient  
+    container_name: rdtclient
+    environment:
+      - ${PUID}
+      - ${PGID}
+      - ${TZ}          
+    volumes:
+      - ${APPDIR}/rdt-client/config:/data/db
+      - ${DOWNLOADS}:${DL}     
+#    network_mode: container:wireguard
+    networks:  
+      t2_proxy:
+        ipv4_address: 192.168.90.60    
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+    labels:
+      - "traefik.enable=true"
+     ## HTTP Routers         
+      - "traefik.http.routers.rdtclient-rtr.entrypoints=https"
+      - "traefik.http.routers.rdtclient-rtr.rule=Host(`rdtclient.${DOMAIN}`)"
+      - "traefik.http.routers.rdtclient-rtr.tls=true" 
+     ## Middlewares       
+      - "traefik.http.routers.rdtclient-rtr.middlewares=chain-oauth@file" 
+     ## HTTP Services                            
+      - "traefik.http.routers.rdtclient-rtr.service=rdtclient-svc"
+      - "traefik.http.services.rdtclient-svc.loadbalancer.server.port=6500"     
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:6500 || exit 1
+      interval: 1m00s
+      timeout: 15s
+      retries: 3
+      start_period: 1m00s    
+    restart: unless-stopped  

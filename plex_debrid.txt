@@ -1,0 +1,60 @@
+version: "3.9" 
+
+networks:
+  t2_proxy:
+     external: true    
+
+services:
+
+  Plex_Debrid:
+    image: itstoggle/plex_debrid:latest
+    container_name: Plex_Debrid
+    volumes:
+      - ${APPDIR}/plexdebrid/config:/config    
+    environment:
+      - ${PUID}
+      - ${PGID}
+      - ${TZ} 
+#    network_mode: container:wireguard     
+    networks:  
+      t2_proxy:
+        ipv4_address: 192.168.90.220      
+    depends_on:
+      jackett: 
+        condition: service_healthy     
+
+  jackett:
+    image: linuxserver/jackett:latest
+    container_name: jackett
+    environment:
+      - ${PUID}
+      - ${PGID}
+      - ${TZ}
+      - AUTO_UPDATE=true #optional
+      #- RUN_OPTS=<run options here> #optional
+    volumes:
+      - ${APPDIR}/jackett/config:/config
+      - ${APPDIR}/jackett/blackhole/:/downloads
+#    network_mode: container:wireguard 
+    networks:  
+      t2_proxy:
+        ipv4_address: 192.168.90.221 
+    labels:
+      - "traefik.enable=true"
+     ## HTTP Routers
+      - "traefik.http.routers.jackett-rtr.entrypoints=https"
+      - "traefik.http.routers.jackett-rtr.rule=Host(`jackett.${DOMAIN}`)"
+      - "traefik.http.routers.jackett-rtr.tls=true"      
+     ## Middlewares
+      - "traefik.http.routers.jackett-rtr.middlewares=chain-oauth@file"      
+     ## HTTP Services             
+      - "traefik.http.routers.jackett-rtr.service=jackett-svc"
+      - "traefik.http.services.jackett-svc.loadbalancer.server.port=9117"          
+    healthcheck:
+      test: curl --connect-timeout 15 --silent --show-error --fail http://localhost:9117 
+      interval: 1m00s
+      timeout: 15s
+      retries: 3
+      start_period: 1m00s
+    restart: unless-stopped    
+     

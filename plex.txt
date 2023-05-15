@@ -1,0 +1,113 @@
+version: "3.9" 
+
+networks:
+  t2_proxy:
+     external: true    
+
+services:
+  plex:
+    image: plexinc/pms-docker:latest
+    container_name: plex
+    devices:
+     - /dev/dri:/dev/dri    
+    volumes:
+      - ${APPDIR}/plex/library:/config
+      - ${APPDIR}/plex/transcode:/transcode
+      - ${APPDIR}/plex/media:/data
+      - ${APPDIR}/rclone/mnt/:/rclone
+      - ${APPDIR}/xteve/conf/data:/xteve
+    environment:
+      - PLEX_UID=1000
+      - PLEX_GID=1000
+      - ${TZ}
+    #  - PLEX_CLAIM=
+    networks:  
+      t2_proxy:
+        ipv4_address: 192.168.90.230  
+    labels:
+      - "traefik.enable=true"
+     ## HTTP Routers
+      - "traefik.http.routers.plex-rtr.entrypoints=https"
+      - "traefik.http.routers.plex-rtr.rule=Host(`plex.${DOMAIN}`)"
+      - "traefik.http.routers.plex-rtr.tls=true"
+     ## Middlewares
+     # - "traefik.http.routers.plex-rtr.middlewares=my-geoblock@file"
+      - "traefik.http.routers.plex-rtr.middlewares=chain-no-auth@file"
+     ## HTTP Services
+      - "traefik.http.routers.plex-rtr.service=plex-svc"
+      - "traefik.http.services.plex-svc.loadbalancer.server.port=32400"            
+    healthcheck:
+      test: curl --connect-timeout 15 --silent --show-error --fail http://localhost:32400/identity
+      interval: 1m00s
+      timeout: 15s
+      retries: 3
+      start_period: 1m00s
+    restart: unless-stopped  
+    
+  tautulli:
+    image: tautulli/tautulli
+    container_name: tautulli
+    volumes:
+      - ${APPDIR}/tautulli:/config
+    environment:
+      - ${PUID}
+      - ${PGID}
+      - ${TZ}
+    networks:  
+      t2_proxy:
+        ipv4_address: 192.168.90.231
+    depends_on:
+      plex: 
+        condition: service_healthy    
+    labels:
+      - "traefik.enable=true"
+     ## HTTP Routers
+      - "traefik.http.routers.tautulli-rtr.entrypoints=https"
+      - "traefik.http.routers.tautulli-rtr.rule=Host(`tautulli.${DOMAIN}`)"
+      - "traefik.http.routers.tautulli-rtr.tls=true"
+     ## Middlewares
+      - "traefik.http.routers.tautulli-rtr.middlewares=chain-oauth@file"
+     ## HTTP Services
+      - "traefik.http.routers.tautulli-rtr.service=tautulli-svc"
+      - "traefik.http.services.tautulli-svc.loadbalancer.server.port=8181"  	       
+    healthcheck:
+      test: curl --connect-timeout 15 --silent --show-error --fail http://localhost:8181
+      interval: 1m00s
+      timeout: 15s
+      retries: 3
+      start_period: 1m00s      
+    restart: unless-stopped  
+
+  xteve:
+    image: dnsforge/xteve
+    container_name: xteve
+    volumes:
+      - ${APPDIR}/xteve/conf:/home/xteve/conf
+      - ${APPDIR}/xteve/guide2go/conf:/home/xteve/guide2go/conf
+    environment:
+      - ${PUID}
+      - ${PGID}
+      - ${TZ}
+    networks:  
+      t2_proxy:
+        ipv4_address: 192.168.90.232       
+    labels:
+      - "traefik.enable=true"
+     ## HTTP Routers
+      - "traefik.http.routers.xteve-rtr.entrypoints=https"
+      - "traefik.http.routers.xteve-rtr.rule=Host(`xteve.${DOMAIN}`)"
+      - "traefik.http.routers.xteve-rtr.tls=true"
+     ## Middlewares
+      - "traefik.http.routers.xteve-rtr.middlewares=chain-oauth@file"
+      #- "traefik.http.middlewares.web-replacepath.replacepath.path=/web"
+      #- "traefik.http.middlewares.add-web.addprefix.prefix=/web"
+     ## HTTP Services
+      - "traefik.http.routers.xteve-rtr.service=xteve-svc"
+      - "traefik.http.services.xteve-svc.loadbalancer.server.port=34400"  
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:34400 || exit 1
+      interval: 1m00s
+      timeout: 15s
+      retries: 3
+      start_period: 1m00s      
+    restart: unless-stopped  
