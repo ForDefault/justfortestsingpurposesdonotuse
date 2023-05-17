@@ -11,8 +11,23 @@ sudo apt install golang libfuse-dev git wget docker.io -y
 sudo git clone https://github.com/itsToggle/rclone_RD
 cd /home/ubuntu/rclone_RD
 sudo systemctl enable docker
+# Build the rclone binary.
 sudo go build -tags cmount
+
+# Check if the build was successful.
+if [ $? -ne 0 ]; then
+    echo "Failed to build rclone binary."
+    exit 1
+fi
+
+# Move the rclone binary.
 sudo mv /home/ubuntu/rclone_RD/rclone /sbin/mount.rclone
+
+# Check if the move was successful.
+if [ ! -f /sbin/mount.rclone ]; then
+    echo "Failed to move rclone binary."
+    exit 1
+fi
 mkdir /home/ubuntu/.config
 mkdir /home/ubuntu/.config/rclone
 sudo printf "[rd]\ntype = realdebrid\napi_key = "$api >> /home/ubuntu/.config/rclone/rclone.conf
