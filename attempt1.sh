@@ -13,6 +13,7 @@ cd /home/ubuntu/rclone_RD
 sudo systemctl enable docker
 # Build the rclone binary.
 sudo go build -tags cmount
+
 # Move the rclone binary.
 sudo mv /home/ubuntu/rclone_RD/rclone /sbin/mount.rclone
 
@@ -21,6 +22,8 @@ if [ ! -f /sbin/mount.rclone ]; then
     echo "Failed to move rclone binary."
     exit 1
 fi
+mkdir /home/ubuntu/.config
+mkdir /home/ubuntu/.config/rclone
 sudo printf "[rd]\ntype = realdebrid\napi_key = "$api >> /home/ubuntu/.config/rclone/rclone.conf
 # Create the mount point.
 mkdir -p /home/ubuntu/rclone_mnt
