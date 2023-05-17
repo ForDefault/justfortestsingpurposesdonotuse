@@ -14,6 +14,7 @@ sudo systemctl enable docker
 # Build the rclone binary.
 sudo go build -tags cmount
 
+
 # Move the rclone binary.
 sudo mv /home/ubuntu/rclone_RD/rclone /sbin/mount.rclone
 
@@ -30,6 +31,12 @@ mkdir -p /home/ubuntu/rclone_mnt
 
 # Add the mount to /etc/fstab.
 sudo su -c "echo 'rd: /home/ubuntu/rclone_mnt rclone config=/home/ubuntu/.config/rclone/rclone.conf,dir_cache_time=10s,buffer_size=4G,allow-other 0 0' >> /etc/fstab"
+
+# Check if the build was successful.
+if [ $? -ne 0 ]; then
+    echo "Failed to build rclone binary."
+    exit 1
+fi
 
 # Get the ID of the plugin.
 plugin_id=$(sudo docker plugin ls --no-trunc --format "{{.ID}}" | head -n 1)
