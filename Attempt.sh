@@ -8,9 +8,8 @@ sudo -E apt-get -qy -o "Dpkg::Options::=--force-confdef" -o "Dpkg::Options::=--f
 sudo sed -i 's/#$nrconf{restart} = '\''i'\'';/$nrconf{restart} = '\''a'\'';/' /etc/needrestart/needrestart.conf
 sudo -E apt-get -qy autoclean
 sudo apt install golang libfuse-dev git wget docker.io -y
-sudo git clone https://github.com/itsToggle/rclone_RD
-current_user=$(whoami)
-sudo chown -R $current_user:$current_user /home/ubuntu/rclone_RD
+git clone https://github.com/itsToggle/rclone_RD
+
 cd /home/ubuntu/rclone_RD
 sudo systemctl enable docker
 # Build the rclone binary.
