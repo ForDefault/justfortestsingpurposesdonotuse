@@ -23,7 +23,7 @@ echo "export PATH=$PATH:$GOPATH/bin" >> ~/.bashrc
 git clone https://github.com/itsToggle/rclone_RD
 cd /home/ubuntu/rclone_RD
 sudo systemctl enable docker
-# Build the rclone binary.
+# Build the rclone binary
 make
 
 # Move the rclone binary.
