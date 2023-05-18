@@ -24,7 +24,7 @@ git clone https://github.com/itsToggle/rclone_RD
 cd /home/ubuntu/rclone_RD
 sudo systemctl enable docker
 # Build the rclone binary.
-sudo go build -tags cmount
+make
 
 # Move the rclone binary.
 sudo mv /home/ubuntu/rclone_RD/rclone /sbin/mount.rclone
